@@ -11,7 +11,7 @@ The current AI ecosystem is fractured by a severe **hardware paywall**. Running 
 Consumer systems are left with two highly flawed options:
 
 1. **Out-of-Memory (OOM) Crashes:** Data-center-focused engines (like vLLM or SGLang) allocate continuous pools of VRAM for static layer caches and KV-anchors. If a model exceeds physical VRAM limits, they crash immediately.
-2. **The CPU "Crawl" Bottleneck:** Consumer engines (like Ollama or Llama.cpp) split the model layers statically between the GPU and System RAM/CPU. Because the GPU crunches its few layers in milliseconds and then spends several seconds frozen waiting for the slow CPU/motherboard bus to finish the rest, token output crawls at an unusable **$< 1$ token per second**.
+2. **The CPU "Crawl" Bottleneck:** Consumer engines (like Ollama or Llama.cpp) split the model layers statically between the GPU and System RAM/CPU. Because the GPU crunches its few layers in milliseconds and then spends several seconds frozen waiting for the slow CPU/motherboard bus to finish the rest, token output crawls at an unusable **< 1 token per second**.
 
 **A-LEAP bridges this gap.** It treats VRAM not as a static parking lot, but as a high-speed moving conveyor belt, ensuring the consumer GPU remains the sole mathematical engine for 100% of the model layers.
 
@@ -20,30 +20,37 @@ Consumer systems are left with two highly flawed options:
 ## 🛠️ Architecture & System Design
 
 A-LEAP weaponizes underutilized asynchronous hardware tracks inside consumer GPUs to overlap memory latency with active tensor calculations.
-+--------------------------------------------+
-|           SYSTEM STORAGE / NVMe            |
-|     (Zero-Copy Virtual Memory Mapping)      |
-+--------------------------------------------+
-|
-(Lightweight Bit-Packed Stream)
-v
-+--------------------------------------------+
-|         MOTHERBOARD BUS (PCIe/USB4)        |
-+--------------------------------------------+
-/                                        
-(Stream Fetch)                                    (Stream Compute)
-v                                                  v
+
+```text
+                  +--------------------------------------------+
+
+                  |           SYSTEM STORAGE / NVMe            |
+                  |     (Zero-Copy Virtual Memory Mapping)     |
+                  +--------------------------------------------+
+                                        |
+                            (Lightweight Bit-Packed Stream)
+                                        v
+                  +--------------------------------------------+
+
+                  |         MOTHERBOARD BUS (PCIe/USB4)        |
+                  +--------------------------------------------+
+                    /                                        \
+       (Stream Fetch)                                    (Stream Compute)
+            v                                                  v
 +------------------------+                          +------------------------+
+
 |   VRAM PING BUFFER     |                          |   VRAM PONG BUFFER     |
 | [ Loading Layer N+1 ]  | <== Asynchronous Swap => | [ Computing Layer N ]  |
 +------------------------+                          +------------------------+
-\                                                  /
-----> [ On-The-Fly Decompression Kernel ] <-----/
-|
-v
-+--------------------------------+
-|    GPU CORES (Tensor Math)     |
-+--------------------------------+
+            \                                                  /
+             \----> [ On-The-Fly Decompression Kernel ] <-----/
+                                    |
+                                    v
+                    +--------------------------------+
+
+                    |    GPU CORES (Tensor Math)     |
+                    +--------------------------------+
+```
 
 ### The Three Core Engines
 
