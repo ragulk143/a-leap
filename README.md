@@ -124,3 +124,51 @@ a-leap/
 │   └── speculative/              # 1B local VRAM draft worker coordination
 └── tests/                        # Full Automated Testing Harnesses
 ```
+# A-LEAP: Asynchronous Layer-Eviction & Activation Prefetcher
+
+### 🎯 Our Motto
+A-LEAP is a high-performance, user-focused local inference engine designed to serve massive 70B+ parameter models seamlessly on constrained, consumer-grade hardware (such as 6GB/8GB/12GB laptop and desktop GPUs). It breaks the memory wall without crashing from Out-of-Memory (OOM) errors.
+
+---
+
+## 🛠️ The Architecture: What We Have Built So Far
+
+1. **Zero-Copy Model Loader (`aleap/engine/loader.py`)**
+   * Dynamically processes raw binary `.safetensors` files from Hugging Face at high speed.
+   * Maps massive multi-gigabyte models into 64-bit host virtual memory spaces using `mmap` with zero initial system RAM overhead.
+
+2. **Asynchronous Matrix Math Conductor (`aleap/engine/runner.py`)**
+   * Implements real tensor-slicing math utilizing PyTorch views.
+   * Executes genuine floating-point linear matrix operations directly over raw file byte maps.
+   * Leverages an asynchronous pipeline loop layout to overlap calculations with background prefetching.
+
+3. **Paged Context Memory Tracker (`aleap/engine/cache.py`)**
+   * Handles non-contiguous sequence layout mappings in a chunked array pool structure.
+   * Safely registers and recycles active text generation tracks to guarantee stability under long prompts.
+
+4. **Self-Hosted OpenAI API & Streaming Web UI Gateway (`aleap/api/`)**
+   * Features a FastAPI backend exposed through a single entry point command.
+   * Mounts a local visual web dashboard natively on the root (`/`) path with full CORS/Ngrok bypass security header mappings.
+   * Delivers Server-Sent Events (SSE) to trickle text outputs character-by-character back to the client.
+
+---
+
+## 🚀 The Ultimate End-User Experience (How to Use A-LEAP)
+
+When this project reaches its final production-ready state, any end-user can install and serve heavy models on a local consumer card using a streamlined command workflow:
+
+```bash
+# 1. Global installation of the engine and its terminal binaries
+pip install a-leap
+
+# 2. Automatically map, cache, and serve a 70B model with an integrated ChatGPT-style Web UI
+aleap serve --model ~/.cache/huggingface/hub/models--meta-llama--Llama-3-70B-Instruct
+```
+
+The user opens `http://localhost:8000/` in their web browser, inputs prompts, and watches real-time generated answers stream in immediately at high throughput speeds.
+
+---
+
+## 🔮 Next Development Sprints: Bridging the Hardware Layer
+* **Native CUDA & HIP Kernel Compilation (`csrc/`)**: Replace the PyTorch execution backend with custom C++/CUDA and AMD HIP extension modules. This will feed our 64-bit page-aligned memory pointers directly into custom INT4 weight decompression kernels and fused Tensor Core GEMV execution operators.
+* **Speculative Look-Ahead Tree Validation**: Upgrade the worker loops to handle deep token trees instead of a linear prediction window to fully saturate the PCIe streaming conveyor belt.
