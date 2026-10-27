@@ -44,8 +44,8 @@ async def bootstrap_engine():
     ENGINE_LOADER.map_weights_to_virtual_memory()
     ENGINE_LOADER.parse_safetensors_metadata()
     
-    total_layers = len(ENGINE_LOADER.layer_offsets)
-    ENGINE_RUNNER = AsynchronousEngineRunner(ENGINE_LOADER, total_layers)
+    #total_layers = len(ENGINE_LOADER.layer_offsets)
+    ENGINE_RUNNER = AsynchronousEngineRunner(ENGINE_LOADER)
 
 async def stream_generator(user_prompt: str, model: str):
     # Execute the actual model look-ahead layer loop over the real pointers!
