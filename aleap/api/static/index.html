@@ -32,7 +32,10 @@ document.getElementById('trigger').addEventListener('click', async () => {
     try {
         const response = await fetch('/v1/chat/completions', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'ngrok-skip-browser-warning': 'any' // Bypasses the ngrok interstitial block page completely
+            },
             body: JSON.stringify({
                 model: 'meta-llama/Llama-3-70B-Instruct',
                 messages: [{ role: 'user', content: 'Explain memory prefetching loops.' }],
