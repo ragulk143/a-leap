@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>A-LEAP Streaming UI Dashboard</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #13141f; color: #e2e8f0; max-width: 700px; margin: 40px auto; padding: 20px; }
+        .box { background: #1a1b26; border-radius: 12px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); border: 1px solid #292e42; }
+        h2 { margin-top: 0; color: #7aa2f7; border-bottom: 1px solid #292e42; padding-bottom: 12px; }
+        button { background: #7aa2f7; color: #1a1b26; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }
+        button:hover { background: #89b4fa; }
+        #output { background: #101014; border-radius: 8px; padding: 16px; min-height: 80px; margin-top: 20px; white-space: pre-wrap; font-family: "SFMono-Regular", Consolas, monospace; line-height: 1.6; border-left: 4px solid #7aa2f7; }
+        .meta { font-size: 12px; color: #565f89; margin-top: 12px; }
+    </style>
+</head>
+<body>
+
+<div class="box">
+    <h2>⚡ A-LEAP Local Stream Testing Lab</h2>
+    <p>Prompt: <strong>"Explain memory prefetching loops."</strong></p>
+    <button id="trigger">Fire Stream Pipeline</button>
+    
+    <div id="output">Click the button above to execute a parallelized speculative validation check stream...</div>
+    <div class="meta">Engine Target: http://localhost:8000/v1/chat/completions (Stream Mode: True)</div>
+</div>
+
+<script>
+document.getElementById('trigger').addEventListener('click', async () => {
+    const outputDiv = document.getElementById('output');
+    outputDiv.innerText = "[*] Dispatching request payload to API server...";
+    
+    try {
+        const response = await fetch('/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                model: 'meta-llama/Llama-3-70B-Instruct',
+                messages: [{ role: 'user', content: 'Explain memory prefetching loops.' }],
+                stream: true
+            })
+        });
+
+        outputDiv.innerText = ""; 
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+
+        while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            
+            const chunkStr = decoder.decode(value);
+            const lines = chunkStr.split('\n');
+            
+            for (const line of lines) {
+                if (line.startsWith('data: ') && !line.includes('[DONE]')) {
+                    try {
+                        const json = JSON.parse(line.slice(6));
+                        const content = json.choices[0].delta.content;
+                        if (content) {
+                            outputDiv.innerText += content;
+                        }
+                    } catch (e) { }
+                }
+            }
+        }
+    } catch (err) {
+        outputDiv.innerText = "[!] Connection Error: Is your A-LEAP server listening in the background tab?";
+    }
+});
+</script>
+
+</body>
+</html>
