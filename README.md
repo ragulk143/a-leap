@@ -218,3 +218,29 @@ http://localhost:8000/
 - [x] Implement dynamic paged KV-cache chunk allocation block mapping models.
 - [ ] Stabilize low-level native CUDA drivers for unified integer header formats (`uint8_t`).
 - [ ] Build custom on-the-fly INT4 weight decompression kernels and fused Tensor Core GEMV math operators.
+# ⚡ A-LEAP (Asynchronous Layer-Eviction & Activation Prefetcher)
+
+**Latest Sync Tracking Timestamp:** Wednesday, 28 October 2026, 10:28 PM IST
+
+An open-source, hardware-aware local inference engine designed to serve frontier-scale LLMs (70B+) seamlessly on consumer-grade hardware (such as 6GB/8GB laptop and desktop GPUs) at interactive speeds without Out-of-Memory (OOM) crashes.
+
+## 🛠 Project Progress & Roadmap Status
+
+### Done (Python, UI & Native Core Subsystems)
+* **Zero-Copy Core Architecture**: Uses virtual memory mapping (`mmap`) to index multi-gigabyte models instantly with zero initial system RAM overhead.
+* **Asynchronous Conductor Pipeline**: Successfully implements dual-stream prefetching queues to mask hardware bus traffic bottlenecks completely in parallel.
+* **Paged VRAM Context Memory Manager**: Allocates chunked, non-contiguous page caches to prevent text sequence session fragmentation blocks.
+* **Sleek ChatGPT Workspace Interface**: Serves a responsive, dark-mode terminal dashboard natively over OpenAI compatibility layers.
+* **Native C++/CUDA Extension Modules**: Full custom Pybind11 backend interface (`aleap_api.cpp`) that successfully compiles into native binary modules linked directly into the Python orchestrator runtime.
+
+The framework successfully handles global installations via `pip install -e .` and boots up under local command arguments with active driver linkage.
+
+### In Progress & Future Work Checklist
+Remaining engineering milestones to make this a top-notch consumer inference tool:
+
+* [ ] **Custom CUDA Math Operators**: Implement custom INT4 weight decompression kernels and fused Tensor Core matrix check passes.
+* [ ] **Speculative Decoupling Tree Checks**: Upgrade verification workflows to handle deep prediction token trees efficiently over narrow buses.
+* [ ] **Automated Testing Harnesses**: Stabilize unit testing files for checking hardware runtime constraints.
+* [ ] **Global Package Distribution**: Register distribution files to PyPI so any end-user can launch the tool via a simple global `pip install a-leap` command.
+## 🤗 Model Sourcing (Hugging Face Integration)
+A-LEAP is engineered to natively ingest raw, un-quantized or quantized `.safetensors` model weights directly. Users can download frontier-scale model files (e.g., Llama-3-70B or Qwen-72B) directly from Hugging Face and point the runtime engine straight to that folder block for seamless memory-mapped streaming.
