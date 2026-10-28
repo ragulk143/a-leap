@@ -2,75 +2,278 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>A-LEAP Streaming UI Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚡ A-LEAP Workspace</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #13141f; color: #e2e8f0; max-width: 700px; margin: 40px auto; padding: 20px; }
-        .box { background: #1a1b26; border-radius: 12px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); border: 1px solid #292e42; }
-        h2 { margin-top: 0; color: #7aa2f7; border-bottom: 1px solid #292e42; padding-bottom: 12px; }
-        button { background: #7aa2f7; color: #1a1b26; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }
-        button:hover { background: #89b4fa; }
-        #output { background: #101014; border-radius: 8px; padding: 16px; min-height: 80px; margin-top: 20px; white-space: pre-wrap; font-family: "SFMono-Regular", Consolas, monospace; line-height: 1.6; border-left: 4px solid #7aa2f7; }
-        .meta { font-size: 12px; color: #565f89; margin-top: 12px; }
+        :root {
+            --bg-sidebar: #171717;
+            --bg-chat: #212121;
+            --bg-input: #2f2f2f;
+            --text-main: #ececec;
+            --text-muted: #b4b4b4;
+            --border-color: #424242;
+            --accent: #38bdf8;
+        }
+
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { margin: 0; padding: 0; display: flex; background-color: var(--bg-chat); color: var(--text-main); height: 100vh; overflow: hidden; }
+
+        /* Left Side History Panel Layout */
+        .sidebar {
+            width: 260px;
+            background-color: var(--bg-sidebar);
+            display: flex;
+            flex-direction: column;
+            padding: 12px;
+            border-right: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .new-chat-btn {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 10px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            text-align: left;
+            transition: background 0.2s;
+        }
+        .new-chat-btn:hover { background-color: rgba(255,255,255,0.05); }
+
+        .system-status {
+            margin-top: auto;
+            padding: 12px;
+            font-size: 12px;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+            box-shadow: 0 0 8px #10b981;
+        }
+
+        /* Main Workspace Container Layout */
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            position: relative;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding-bottom: 150px;
+        }
+
+        .message-row {
+            padding: 24px;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+        }
+        .message-row.user-type { background-color: rgba(255,255,255,0.02); }
+
+        .message-content {
+            max-width: 720px;
+            margin: 0 auto;
+            display: flex;
+            gap: 18px;
+            line-height: 1.6;
+            font-size: 16px;
+            white-space: pre-wrap;
+        }
+
+        .avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+        .user-type .avatar { background-color: #543d75; color: white; }
+        .ai-type .avatar { background-color: var(--accent); color: #000; }
+
+        .bubble { padding-top: 2px; flex: 1; }
+
+        /* Floating Input Area Component */
+        .input-wrapper {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, var(--bg-chat) 30%);
+            padding: 24px 20px 40px 20px;
+        }
+
+        .input-box {
+            max-width: 720px;
+            margin: 0 auto;
+            background-color: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .input-box textarea {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text-main);
+            font-size: 16px;
+            resize: none;
+            height: 24px;
+            max-height: 200px;
+        }
+
+        .send-btn {
+            background-color: var(--text-main);
+            color: #000;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.2s;
+        }
+        .send-btn:hover { opacity: 0.8; }
     </style>
 </head>
 <body>
 
-<div class="box">
-    <h2>⚡ A-LEAP Local Stream Testing Lab</h2>
-    <p>Prompt: <strong>"Explain memory prefetching loops."</strong></p>
-    <button id="trigger">Fire Stream Pipeline</button>
-    
-    <div id="output">Click the button above to execute a parallelized speculative validation check stream...</div>
-    <div class="meta">Engine Target: http://localhost:8000/v1/chat/completions (Stream Mode: True)</div>
-</div>
+    <!-- Sidebar Layout Panel -->
+    <div class="sidebar">
+        <button class="new-chat-btn" onclick="resetChat()">📝 New Chat</button>
+        <div class="system-status">
+            <div><span class="status-dot"></span> Serving Model Localhost</div>
+            <div style="font-size: 11px; margin-top: 4px; color: var(--text-muted);">Runtime: A-LEAP Engine (Active)</div>
+        </div>
+    </div>
 
-<script>
-document.getElementById('trigger').addEventListener('click', async () => {
-    const outputDiv = document.getElementById('output');
-    outputDiv.innerText = "[*] Dispatching request payload to API server...";
-    
-    try {
-        const response = await fetch('/v1/chat/completions', {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'ngrok-skip-browser-warning': 'any' // Bypasses the ngrok interstitial block page completely
-            },
-            body: JSON.stringify({
-                model: 'meta-llama/Llama-3-70B-Instruct',
-                messages: [{ role: 'user', content: 'Explain memory prefetching loops.' }],
-                stream: true
-            })
-        });
+    <!-- Live Workspace Viewport Container -->
+    <div class="chat-container">
+        <div class="chat-messages" id="chatArea">
+            <div class="message-row ai-type">
+                <div class="message-content">
+                    <div class="avatar">AI</div>
+                    <div class="bubble">Hello! I am connected to the A-LEAP engine gateway. How can I help you today?</div>
+                </div>
+            </div>
+        </div>
 
-        outputDiv.innerText = ""; 
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
+        <!-- Input Frame Element Panel -->
+        <div class="input-wrapper">
+            <div class="input-box">
+                <textarea id="promptField" placeholder="Message A-LEAP..." onkeydown="handleKey(event)"></textarea>
+                <button class="send-btn" onclick="triggerExecution()">➔</button>
+            </div>
+        </div>
+    </div>
 
-        while (true) {
-            const { value, done } = await reader.read();
-            if (done) break;
-            
-            const chunkStr = decoder.decode(value);
-            const lines = chunkStr.split('\n');
-            
-            for (const line of lines) {
-                if (line.startsWith('data: ') && !line.includes('[DONE]')) {
-                    try {
-                        const json = JSON.parse(line.slice(6));
-                        const content = json.choices[0].delta.content;
-                        if (content) {
-                            outputDiv.innerText += content;
-                        }
-                    } catch (e) { }
-                }
+    <script>
+        function handleKey(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                triggerExecution();
             }
         }
-    } catch (err) {
-        outputDiv.innerText = "[!] Connection Error: Is your A-LEAP server listening in the background tab?";
-    }
-});
-</script>
 
+        function resetChat() {
+            document.getElementById('chatArea').innerHTML = `
+                <div class="message-row ai-type">
+                    <div class="message-content">
+                        <div class="avatar">AI</div>
+                        <div class="bubble">New conversation context created. How can I assist?</div>
+                    </div>
+                </div>`;
+        }
+
+        async function triggerExecution() {
+            const input = document.getElementById('promptField');
+            const chatArea = document.getElementById('chatArea');
+            const userMsg = input.value.trim();
+            if (!userMsg) return;
+
+            // Render User bubble row layout
+            chatArea.innerHTML += `
+                <div class="message-row user-type">
+                    <div class="message-content">
+                        <div class="avatar">U</div>
+                        <div class="bubble">${userMsg}</div>
+                    </div>
+                </div>`;
+            input.value = '';
+            chatArea.scrollTop = chatArea.scrollHeight;
+
+            // Prepare AI dynamic stream frame container
+            const aiRow = document.createElement('div');
+            aiRow.className = 'message-row ai-type';
+            const aiContent = document.createElement('div');
+            aiContent.className = 'message-content';
+            aiContent.innerHTML = `<div class="avatar">AI</div>`;
+            const textTarget = document.createElement('div');
+            textTarget.className = 'bubble';
+            textTarget.innerText = 'Thinking...';
+            
+            aiContent.appendChild(textTarget);
+            aiRow.appendChild(aiContent);
+            chatArea.appendChild(aiRow);
+            chatArea.scrollTop = chatArea.scrollHeight;
+
+            try {
+                const res = await fetch('/v1/chat/completions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: "a-leap-70b",
+                        messages: [{ role: "user", content: userMsg }],
+                        stream: true
+                    })
+                });
+
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder();
+                textTarget.innerText = '';
+
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    
+                    const pieces = decoder.decode(value).split('\n');
+                    for (const chunk of pieces) {
+                        if (chunk.startsWith('data: ') && !chunk.includes('[DONE]')) {
+                            try {
+                                const payload = JSON.parse(chunk.slice(6));
+                                const textToken = payload.choices[0].delta.content || '';
+                                textTarget.innerText += textToken;
+                            } catch(e) {}
+                        }
+                    }
+                    chatArea.scrollTop = chatArea.scrollHeight;
+                }
+            } catch (err) {
+                textTarget.innerText = "Error parsing active stream engine connection.";
+            }
+        }
+    </script>
 </body>
 </html>

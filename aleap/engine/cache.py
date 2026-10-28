@@ -1,49 +1,79 @@
-import numpy as np
-from typing import Dict, Any
+import time
+from typing import Dict, List, Set
 
-class DynamicKVCacheTracker:
-    """
-    Manages and index-maps GPU memory allocation slots for the Key-Value (KV) cache history.
-    Prevents memory fragmentation by grouping token sequences into fixed, page-aligned block structures.
-    """
-    def __init__(self, num_layers: int, max_seq_len: int, num_heads: int, head_dim: int, block_size: int = 16):
-        self.num_layers = num_layers
-        self.max_seq_len = max_seq_len
-        self.num_heads = num_heads
-        self.head_dim = head_dim
+class PagedKVCacheManager:
+    def __init__(self, num_blocks: int = 1024, block_size: int = 16):
+        """
+        Manages VRAM context memory blocks to prevent memory fragmentation
+        during long multi-turn chat sessions.
+        
+        Args:
+            num_blocks: Total physical block arrays available in the engine pool.
+            block_size: Number of tokens allocated per block page (default: 16).
+        """
         self.block_size = block_size
+        self.num_blocks = num_blocks
         
-        # Calculate total tracking chunks needed across the dynamic model layers
-        self.total_blocks = (max_seq_len + block_size - 1) // block_size
+        # Free memory pool tracking management registers
+        self.free_blocks: List[int] = list(range(num_blocks))
         
-        # Track physical block allocation maps (0 = Free, 1 = Active Context Allocation)
-        self.block_table_registry = np.zeros((self.total_blocks,), dtype=np.int32)
-        print(f"[*] A-LEAP Dynamic KV-Cache Initialized. Allocated {self.total_blocks} context memory blocks ({block_size} tokens per page block).")
+        # Active lookups mapping: session_id -> sequential list of allocated block physical indices
+        self.session_table: Dict[str, List[int]] = {}
+        
+        # Track sequence lengths dynamically per session
+        self.session_lengths: Dict[str, int] = {}
 
-    def allocate_context_slots(self, prompt_token_count: int) -> list:
+    def allocate_session(self, session_id: str):
+        """Registers a fresh conversation context footprint in the tracker."""
+        if session_id in self.session_table:
+            self.free_session(session_id)
+        self.session_table[session_id] = []
+        self.session_lengths[session_id] = 0
+        print(f"[A-LEAP Cache] Isolated memory sequence initialized for session: {session_id}")
+
+    def update_session_tokens(self, session_id: str, new_token_count: int) -> int:
         """
-        Calculates and reserves the exact number of memory block indices 
-        required to store the incoming generation context window history.
+        Dynamically tracks token expansion and maps necessary memory pages
+        on-the-fly as chat history grows.
         """
-        blocks_needed = (prompt_token_count + self.block_size - 1) // self.block_size
-        assigned_block_indices = []
-        
-        for idx in range(len(self.block_table_registry)):
-            if len(assigned_block_indices) == blocks_needed:
-                break
-            if self.block_table_registry[idx] == 0: # Block is unallocated
-                self.block_table_registry[idx] = 1 # Mark as active storage context
-                assigned_block_indices.append(idx)
-                
-        if len(assigned_block_indices) < blocks_needed:
-            raise MemoryError("Out of Memory: Dynamic KV-Cache address tracking pools exhausted.")
+        if session_id not in self.session_table:
+            self.allocate_session(session_id)
             
-        print(f"[KV-Cache] Successfully mapped {prompt_token_count} tokens across {len(assigned_block_indices)} hardware address blocks.")
-        return assigned_block_indices
+        current_len = self.session_lengths[session_id]
+        total_needed_len = current_len + new_token_count
+        self.session_lengths[session_id] = total_needed_len
+        
+        # Compute how many physical page blocks this sequence requires
+        current_blocks_count = len(self.session_table[session_id])
+        needed_blocks_count = (total_needed_len + self.block_size - 1) // self.block_size
+        
+        blocks_to_allocate = needed_blocks_count - current_blocks_count
+        
+        if blocks_to_allocate > 0:
+            if len(self.free_blocks) < blocks_to_allocate:
+                raise MemoryError("[!] A-LEAP Cache OOM: Physical VRAM block allocation limit reached!")
+                
+            for _ in range(blocks_to_allocate):
+                next_free = self.free_blocks.pop(0)
+                self.session_table[session_id].append(next_free)
+                
+            print(f"[A-LEAP Cache] Session {session_id} expanded by {blocks_to_allocate} blocks. "
+                  f"Total blocks held: {len(self.session_table[session_id])}. "
+                  f"Remaining pool capacity: {len(self.free_blocks)}")
+                  
+        return needed_blocks_count
 
-    def free_context_slots(self, block_indices: list):
-        """Evicts context sequence chains and recycles memory blocks into the tracking pool."""
-        for idx in block_indices:
-            if idx < len(self.block_table_registry):
-                self.block_table_registry[idx] = 0
-        print(f"[KV-Cache] Evicted context sequence history. Recycled {len(block_indices)} blocks back into global memory pool.")
+    def get_block_mapping(self, session_id: str) -> List[int]:
+        """Returns the real physical block array index maps for the hardware kernels."""
+        return self.session_table.get(session_id, [])
+
+    def free_session(self, session_id: str):
+        """Evicts context arrays instantly, returning pages back to the global pool."""
+        if session_id in self.session_table:
+            allocated_indices = self.session_table[session_id]
+            # Return indices back to free pool registers
+            self.free_blocks.extend(allocated_indices)
+            
+            del self.session_table[session_id]
+            del self.session_lengths[session_id]
+            print(f"[A-LEAP Cache] Memory context safely reclaimed for session: {session_id}")

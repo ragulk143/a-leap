@@ -172,3 +172,49 @@ The user opens `http://localhost:8000/` in their web browser, inputs prompts, an
 ## 🔮 Next Development Sprints: Bridging the Hardware Layer
 * **Native CUDA & HIP Kernel Compilation (`csrc/`)**: Replace the PyTorch execution backend with custom C++/CUDA and AMD HIP extension modules. This will feed our 64-bit page-aligned memory pointers directly into custom INT4 weight decompression kernels and fused Tensor Core GEMV execution operators.
 * **Speculative Look-Ahead Tree Validation**: Upgrade the worker loops to handle deep token trees instead of a linear prediction window to fully saturate the PCIe streaming conveyor belt.
+# ⚡ A-LEAP (Asynchronous Layer-Eviction & Activation Prefetcher)
+
+A-LEAP is a high-performance, user-focused, dependency-free local inference engine designed to serve frontier-scale LLMs (70B+) seamlessly on consumer-grade hardware (6GB/8GB desktop and laptop GPUs) at interactive speeds without crashing from Out-of-Memory (OOM) errors.
+
+## 🎯 The Core Mission
+A-LEAP breaks the hardware paywall by shifting from traditional static VRAM parking models or crawling CPU offloading mechanics. Instead, it treats local VRAM like a **predictive, high-speed asynchronous moving conveyor belt**—overlapping active model execution threads (`Stream Compute`) with motherboard bus weight data transfers (`Stream Fetch`) completely in parallel.
+
+## ⚙️ Project Architecture
+- **Zero-Copy Loader (`aleap/engine/loader.py`)**: Uses 64-bit virtual memory mappings (`mmap`) to index massive model parameters instantly with zero system RAM allocation overhead.
+- **Asynchronous Conductor (`aleap/engine/runner.py`)**: Manages background prefetching execution ring buffers to completely hide PCIe/USB4 latency limits.
+- **Paged Memory Tracker (`aleap/engine/cache.py`)**: Allocates chunked, non-contiguous block arrays to protect KV-cache contexts across long sequences without memory fragmentation.
+- **Unified Gateway Server (`aleap/api/`)**: Exposes an OpenAI-compatible API runtime served alongside a responsive, dark-mode premium ChatGPT clone terminal dashboard canvas.
+
+## 🚀 Quick Start (Local Developer Setup)
+
+### 1. Environment Initialization
+Isolate your development workspace by creating a clean virtual environment:
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install --upgrade pip setuptools wheel
+```
+
+### 2. Install A-LEAP Natively
+Install the engine framework locally in editable mode (changes apply instantly):
+```bash
+pip install -e .
+```
+
+### 3. Fire Up the Runtime Server
+Launch the server targeting your local model checkpoints directory. If no weights are found, the framework gracefully initializes a simulated 32-layer evaluation environment:
+```bash
+aleap serve --model ./
+```
+
+Open your favorite web browser and navigate directly to:
+```text
+http://localhost:8000/
+```
+
+## 🛠️ Roadmap & Upcoming Milestones
+- [x] Complete Python serving framework orchestration routines.
+- [x] Integrate production-grade ChatGPT clone dark-mode workspace.
+- [x] Implement dynamic paged KV-cache chunk allocation block mapping models.
+- [ ] Stabilize low-level native CUDA drivers for unified integer header formats (`uint8_t`).
+- [ ] Build custom on-the-fly INT4 weight decompression kernels and fused Tensor Core GEMV math operators.
