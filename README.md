@@ -1,10 +1,9 @@
 # ⚡ A-LEAP (Asynchronous Layer-Eviction & Activation Prefetcher)
 
-[![License: MIT](https://shields.io)](https://opensource.org)
-[![Python Version](https://shields.io)](https://python.org)
-[![GitHub Stars](https://shields.io)](https://github.com)
-[![GitHub Issues](https://shields.io)](https://github.com)
-[![Build Status](https://shields.io)](https://github.com)
+![License: MIT](https://shields.io)
+![Python Version](https://shields.io)
+![Development Status](https://shields.io)
+![GitHub Stars](https://shields.io)
 
 # A-LEAP (Asynchronous Layer-Eviction & Activation Prefetcher)
 
