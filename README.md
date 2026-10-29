@@ -1,5 +1,8 @@
 # ⚡ A-LEAP (Asynchronous Layer-Eviction & Activation Prefetcher)
 
+<img width="1264" height="848" alt="image" src="https://github.com/user-attachments/assets/aa1a7894-dd7c-4458-96e9-18effdf92e47" />
+
+
 ![License: MIT](https://shields.io)
 ![Python Version](https://shields.io)
 ![Development Status](https://shields.io)
