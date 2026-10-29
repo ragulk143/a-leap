@@ -1,3 +1,11 @@
+# ⚡ A-LEAP (Asynchronous Layer-Eviction & Activation Prefetcher)
+
+[![License: MIT](https://shields.io)](https://opensource.org)
+[![Python Version](https://shields.io)](https://python.org)
+[![GitHub Stars](https://shields.io)](https://github.com)
+[![GitHub Issues](https://shields.io)](https://github.com)
+[![Build Status](https://shields.io)](https://github.com)
+
 # A-LEAP (Asynchronous Layer-Eviction & Activation Prefetcher)
 
 An open-source, hardware-aware, GPU-first dynamic streaming inference engine designed to break the memory wall on consumer hardware. A-LEAP allows low-VRAM gaming rigs and consumer laptops to serve frontier-scale LLMs (70B+) at interactive, real-time speeds by converting local VRAM into a predictive, high-speed asynchronous ring-buffer.
